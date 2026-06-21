@@ -1,3 +1,145 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Cadence — Pastel cool palette, designed for AAC users.
+ * Calm, low-contrast, no harsh saturation. Generous spacing & large hit areas.
+ */
+:root {
+  --bg: #eaf2f4;          /* powder blue */
+  --bg-soft: #f3f8f9;     /* card surface */
+  --bg-elev: #ffffff;     /* highest surface */
+  --tile: #c8e6d0;        /* mint */
+  --tile-hover: #b6dcc0;
+  --tile-text: #2c3e50;   /* deep navy */
+  --tile-selected: #5fa672;
+  --text: #2c3e50;
+  --text-soft: #5a6d7e;
+  --text-faint: #8aa1b3;
+  --accent: #f4d35e;      /* pale yellow */
+  --accent-soft: #fbebac;
+  --partner: #d8e6ef;     /* soft blue for partner bubble */
+  --user: #c8e6d0;        /* mint for user bubble */
+  --border: #d6e3e7;
+  --ring: #a8c5cc;
+}
+
+html, body, #root {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Calm focus ring — visible but not jarring */
+button:focus-visible, input:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Slow, gentle pulse — no bouncy animations */
+@keyframes calmPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.calm-pulse { animation: calmPulse 2.4s ease-in-out infinite; }
+
+/* Gentle entrance — 600ms ease so it doesn't startle */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 600ms ease-out both; }
+
+/* Hero rise — staggered, slow, cinematic */
+@keyframes heroRise {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-hero-rise          { animation: heroRise 1500ms cubic-bezier(.16,1,.3,1) both; }
+.animate-hero-rise-delay    { animation: heroRise 1500ms cubic-bezier(.16,1,.3,1) 600ms both; }
+.animate-hero-rise-delay-2  { animation: heroRise 1500ms cubic-bezier(.16,1,.3,1) 1300ms both; }
+
+/* Wave drift — three parallax layers translate continuously. The SVG path is
+ * drawn twice end-to-end so the -50% translate loops seamlessly. */
+@keyframes waveDrift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+.wave-back  { animation: waveDrift 28s linear infinite; }
+.wave-mid   { animation: waveDrift 18s linear infinite reverse; }
+.wave-front { animation: waveDrift 12s linear infinite; }
+
+/* Wave wash — water sheets slide DOWN from above the viewport, reach their
+ * peak (most-visible state), then RECEDE back up. Three layers with
+ * staggered timing and depths gives parallax — like real surf rolling in.
+ * Bottom edge of each layer is a wavy SVG mask so the water "front" is
+ * organic-looking, not a straight line. */
+@keyframes waveWashBack {
+  0%        { transform: translate3d(0, -110%, 0); }
+  42%, 58%  { transform: translate3d(0, 0, 0); }
+  100%      { transform: translate3d(0, -110%, 0); }
+}
+@keyframes waveWashMid {
+  0%        { transform: translate3d(0, -115%, 0); }
+  44%, 56%  { transform: translate3d(0, 0, 0); }
+  100%      { transform: translate3d(0, -115%, 0); }
+}
+@keyframes waveWashFront {
+  0%        { transform: translate3d(0, -120%, 0); }
+  46%, 54%  { transform: translate3d(0, 0, 0); }
+  100%      { transform: translate3d(0, -120%, 0); }
+}
+.wave-wash-back  { animation: waveWashBack  17s cubic-bezier(.4,0,.2,1) infinite; }
+.wave-wash-mid   { animation: waveWashMid   13s cubic-bezier(.4,0,.2,1) infinite -2.5s; }
+.wave-wash-front { animation: waveWashFront 10s cubic-bezier(.4,0,.2,1) infinite -5s; }
+
+/* Foam shimmer — a soft horizontal shine that breathes on the wave fronts */
+@keyframes foamShimmer {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.85; }
+}
+.foam-shimmer { animation: foamShimmer 3.5s ease-in-out infinite; }
+
+/* Subtle vertical bob on the hero so it feels like it's floating on the swell */
+@keyframes heroBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+.hero-bob { animation: heroBob 6.5s ease-in-out infinite; }
+
+/* Tile feels physical without being aggressive */
+.tile {
+  background: var(--tile);
+  color: var(--tile-text);
+  border: 1px solid transparent;
+  border-radius: 18px;
+  font-weight: 600;
+  font-size: 1.125rem;
+  min-height: 84px;
+  padding: 0.75rem 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+  transition: background 120ms ease, transform 80ms ease;
+  cursor: pointer;
+  word-break: break-word;
+}
+.tile:hover { background: var(--tile-hover); }
+.tile:active { transform: scale(0.97); }
+.tile.selected {
+  background: var(--tile-selected);
+  color: white;
+  border-color: var(--tile-selected);
+}
+.tile.add {
+  background: var(--bg-elev);
+  border: 2px dashed var(--text-faint);
+  color: var(--text-soft);
+  font-size: 1rem;
+}
+.tile.add:hover { border-color: var(--text-soft); background: var(--bg-soft); }
+.tile.pinned { box-shadow: inset 0 0 0 2px var(--accent); }
