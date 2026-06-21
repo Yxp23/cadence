@@ -27,7 +27,18 @@ const AB_SAMPLES = [
 ]
 const FLAT_SETTINGS = { stability: 0.95, similarity_boost: 0.85, style: 0.0, speed: 0.85 }
 
-function buildTtsUrl(text, settings) {
+// Stock ElevenLabs voice "Rachel" — used for the "Standard AAC" sample so it
+// clearly sounds like a generic synthesized voice, NOT the user's cloned voice.
+const STOCK_AAC_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'
+
+// Same session_id the main app uses → backend will pick up the cloned voice
+// for the Cadence side of the comparison.
+const SESSION_ID = (() => {
+  const k = 'cadence_session_id'
+  return localStorage.getItem(k) || ''
+})()
+
+function buildTtsUrl(text, settings, { useClonedVoice }) {
   const p = new URLSearchParams({
     text,
     stability: String(settings.stability),
@@ -35,6 +46,13 @@ function buildTtsUrl(text, settings) {
     style: String(settings.style),
     speed: String(settings.speed),
   })
+  if (useClonedVoice) {
+    // Pass session_id so the backend uses the user's banked voice
+    if (SESSION_ID) p.append('session_id', SESSION_ID)
+  } else {
+    // Force the stock voice for the "Standard AAC" sample
+    p.append('voice_id', STOCK_AAC_VOICE_ID)
+  }
   return `${API}/tts?${p.toString()}`
 }
 
@@ -121,7 +139,8 @@ function ABPlayer({ sample }) {
       audioRef.current = null
     }
     const settings = which === 'flat' ? FLAT_SETTINGS : sample.cadence
-    const a = new Audio(buildTtsUrl(sample.text, settings))
+    const url = buildTtsUrl(sample.text, settings, { useClonedVoice: which === 'cadence' })
+    const a = new Audio(url)
     audioRef.current = a
     setPlaying(which)
     a.onended = () => setPlaying(p => (p === which ? null : p))

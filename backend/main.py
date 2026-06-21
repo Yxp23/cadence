@@ -699,6 +699,7 @@ async def tts(
     speed: Optional[float] = None,
     emotion: str = "",
     session_id: str = "",
+    voice_id: str = "",  # explicit override — used by Demo page A/B comparison
 ):
     """
     Stream MP3 audio from ElevenLabs. GET so <audio src=...> can stream natively (lowest latency).
@@ -724,12 +725,16 @@ async def tts(
 
     # optimize_streaming_latency=2 is the sweet spot: still fast first byte but
     # MUCH more natural prosody than 3-4. Higher values rush words together.
-    # Prefer the user's own cloned voice (per session) over the env default
-    voice_id = ELEVENLABS_VOICE_ID
-    if session_id:
-        per_session = await voice_store.get(session_id)
-        if per_session:
-            voice_id = per_session
+    # Voice resolution order:
+    #   1. explicit voice_id query param (Demo A/B comparison uses this)
+    #   2. per-session cloned voice (if user has banked one)
+    #   3. env default
+    if not voice_id:
+        voice_id = ELEVENLABS_VOICE_ID
+        if session_id:
+            per_session = await voice_store.get(session_id)
+            if per_session:
+                voice_id = per_session
 
     url = (f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream"
            "?output_format=mp3_44100_64&optimize_streaming_latency=2")
