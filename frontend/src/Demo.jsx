@@ -342,7 +342,7 @@ export default function Demo({ onTryIt, onBack }) {
           How Cadence works
         </div>
         <h2 className="text-3xl font-semibold mb-2">
-          Five live agents, plus your own voice.
+          Four AI agents. One memory. One voice.
         </h2>
         <p className="text-base mb-6 max-w-2xl" style={{ color: 'var(--text-soft)' }}>
           Each box below is an actual service running this very moment.
