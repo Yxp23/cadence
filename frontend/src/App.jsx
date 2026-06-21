@@ -4,6 +4,7 @@ import Landing, { PROFILES } from './Landing.jsx'
 import { symbolFor } from './symbols.js'
 import VoiceRecorder from './VoiceRecorder.jsx'
 import Demo from './Demo.jsx'
+import Tutorial from './Tutorial.jsx'
 
 const WS_URL = 'ws://localhost:8000/ws/listen'
 const API = 'http://localhost:8000'
@@ -144,7 +145,7 @@ export default function App() {
 
   const [showSettings, setShowSettings] = useState(false)
   const [showRecorder, setShowRecorder] = useState(false)
-  const [view, setView] = useState('app') // 'app' | 'demo'
+  const [view, setView] = useState('app') // 'app' | 'demo' | 'tutorial'
   const [hasCustomVoice, setHasCustomVoice] = useState(false)
 
   // Check on mount whether this session already has a cloned voice
@@ -607,11 +608,23 @@ export default function App() {
     )
   }
 
+  if (view === 'tutorial') {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div key="tutorial" {...pageTransition}>
+          <Tutorial onDone={() => setView('app')} onBack={() => setView('app')} />
+        </motion.div>
+      </AnimatePresence>
+    )
+  }
+
   if (!profile) {
     return (
       <AnimatePresence mode="wait">
         <motion.div key="landing" {...pageTransition}>
-          <Landing onPick={pickProfile} onSeeDemo={() => setView('demo')} />
+          <Landing onPick={pickProfile}
+                   onSeeDemo={() => setView('demo')}
+                   onSeeTutorial={() => setView('tutorial')} />
         </motion.div>
       </AnimatePresence>
     )
@@ -647,6 +660,12 @@ export default function App() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setView('tutorial')}
+              className="hidden sm:inline-flex px-4 py-2.5 rounded-full text-sm font-medium"
+              style={{ background: 'var(--bg-elev)', border: '1px solid var(--border)', color: 'var(--text-soft)' }}>
+              Tutorial
+            </button>
             <button
               onClick={() => setView('demo')}
               className="hidden sm:inline-flex px-4 py-2.5 rounded-full text-sm font-medium"

@@ -261,7 +261,7 @@ function WaveCanvas() {
   )
 }
 
-export default function Landing({ onPick, onSeeDemo }) {
+export default function Landing({ onPick, onSeeDemo, onSeeTutorial }) {
   const [stage, setStage] = useState('welcome') // welcome → pick
   const [picking, setPicking] = useState(null)
   const [soundOn, setSoundOn] = useState(false)
@@ -392,18 +392,29 @@ export default function Landing({ onPick, onSeeDemo }) {
               </motion.button>
             </motion.div>
 
-            {/* Secondary action — quieter text link beneath, clearly subordinate */}
-            {onSeeDemo && (
-              <motion.button onClick={onSeeDemo}
-                             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                             transition={{ duration: 0.9, delay: 2.0 }}
-                             whileHover={{ y: -1 }}
-                             className="mt-7 inline-flex items-center gap-1.5 text-base font-medium px-4 py-2 rounded-full"
-                             style={{ color: 'var(--text-soft)' }}>
-                See how it works
-                <span aria-hidden>→</span>
-              </motion.button>
-            )}
+            {/* Secondary actions — quieter text links beneath, clearly subordinate */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                        transition={{ duration: 0.9, delay: 2.0 }}
+                        className="mt-7 flex flex-wrap items-center justify-center gap-2">
+              {onSeeTutorial && (
+                <motion.button onClick={onSeeTutorial}
+                               whileHover={{ y: -1 }}
+                               className="inline-flex items-center gap-1.5 text-base font-medium px-4 py-2 rounded-full"
+                               style={{ color: 'var(--text-soft)' }}>
+                  How to use it
+                  <span aria-hidden>→</span>
+                </motion.button>
+              )}
+              {onSeeDemo && (
+                <motion.button onClick={onSeeDemo}
+                               whileHover={{ y: -1 }}
+                               className="inline-flex items-center gap-1.5 text-base font-medium px-4 py-2 rounded-full"
+                               style={{ color: 'var(--text-soft)' }}>
+                  How it works
+                  <span aria-hidden>→</span>
+                </motion.button>
+              )}
+            </motion.div>
           </motion.div>
         )}
 
