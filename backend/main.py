@@ -767,10 +767,26 @@ async def tts(
 
 @app.get("/health")
 async def health():
+    """Surface every external dependency at once. Demo-critical because
+    Redis-backed features (Memory, Vocab, Voice) fail silently without it."""
+    redis_status = "not_configured"
+    if redis_client:
+        try:
+            await redis_client.ping()
+            redis_status = "connected"
+        except Exception as e:
+            redis_status = f"error: {str(e)[:80]}"
     return {
         "status": "ok",
         "deepgram_key_set": bool(DEEPGRAM_API_KEY),
         "anthropic_key_set": bool(ANTHROPIC_API_KEY),
+        "elevenlabs_key_set": bool(ELEVENLABS_API_KEY),
+        "redis": redis_status,
+        "persistence_features": {
+            "memory": redis_status == "connected",
+            "vocab": redis_status == "connected",
+            "voice_clone_session": redis_status == "connected",
+        },
     }
 
 
