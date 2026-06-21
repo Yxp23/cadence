@@ -1,5 +1,43 @@
 import { useState, useEffect, useRef } from 'react'
 
+const API = 'http://localhost:8000'
+
+// Hear the difference: same sentence, same voice, two delivery profiles.
+// "Standard AAC" = high stability + zero style + slow speed → robotic, flat.
+// "Cadence" = the emotion-tuned settings the Generator would actually pick.
+const AB_SAMPLES = [
+  {
+    text: "Honestly, I'm a little tired — but I'm feeling better than yesterday.",
+    emotion: 'tender',
+    cadence: { stability: 0.55, similarity_boost: 0.82, style: 0.40, speed: 0.88 },
+    color: '#dca6c0',
+  },
+  {
+    text: "Yes! I'd love to come — what time should I be there?",
+    emotion: 'excited',
+    cadence: { stability: 0.35, similarity_boost: 0.80, style: 0.55, speed: 0.98 },
+    color: '#e89bbd',
+  },
+  {
+    text: "I love you. Goodnight, Dad.",
+    emotion: 'warm',
+    cadence: { stability: 0.45, similarity_boost: 0.80, style: 0.40, speed: 0.92 },
+    color: '#e8b486',
+  },
+]
+const FLAT_SETTINGS = { stability: 0.95, similarity_boost: 0.85, style: 0.0, speed: 0.85 }
+
+function buildTtsUrl(text, settings) {
+  const p = new URLSearchParams({
+    text,
+    stability: String(settings.stability),
+    similarity_boost: String(settings.similarity_boost),
+    style: String(settings.style),
+    speed: String(settings.speed),
+  })
+  return `${API}/tts?${p.toString()}`
+}
+
 /*
  * Demo / pitch page.
  *
@@ -72,6 +110,78 @@ const STATS = [
   { big: '1 in 36', label: 'children diagnosed with autism — ~30% minimally verbal',
     cite: 'CDC, 2023' },
 ]
+
+function ABPlayer({ sample }) {
+  const [playing, setPlaying] = useState(null)  // 'flat' | 'cadence' | null
+  const audioRef = useRef(null)
+
+  const play = (which) => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
+    }
+    const settings = which === 'flat' ? FLAT_SETTINGS : sample.cadence
+    const a = new Audio(buildTtsUrl(sample.text, settings))
+    audioRef.current = a
+    setPlaying(which)
+    a.onended = () => setPlaying(p => (p === which ? null : p))
+    a.onerror = () => setPlaying(null)
+    a.play().catch(() => setPlaying(null))
+  }
+
+  return (
+    <div className="rounded-3xl p-5"
+         style={{ background: 'var(--bg-elev)', border: '1px solid var(--border)' }}>
+      <p className="text-base sm:text-lg mb-4 leading-snug"
+         style={{ color: 'var(--text)' }}>
+        "{sample.text}"
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {/* Standard AAC — the flat version */}
+        <button
+          onClick={() => play('flat')}
+          className="rounded-2xl px-4 py-3 text-left transition-colors flex items-center gap-3"
+          style={{
+            background: playing === 'flat' ? '#e8e8e8' : 'var(--bg-soft)',
+            border: '1px solid var(--border)',
+          }}>
+          <span className="text-2xl">{playing === 'flat' ? '🔊' : '▶'}</span>
+          <div className="flex-1">
+            <div className="text-xs uppercase tracking-widest"
+                 style={{ color: 'var(--text-faint)' }}>
+              Standard AAC
+            </div>
+            <div className="text-sm font-medium" style={{ color: 'var(--text-soft)' }}>
+              Flat, robotic
+            </div>
+          </div>
+        </button>
+        {/* Cadence — the emotional version */}
+        <button
+          onClick={() => play('cadence')}
+          className="rounded-2xl px-4 py-3 text-left transition-colors flex items-center gap-3"
+          style={{
+            background: playing === 'cadence' ? sample.color + '40' : 'var(--user)',
+            border: `1px solid ${playing === 'cadence' ? sample.color : '#a8c5b0'}`,
+          }}>
+          <span className="text-2xl">{playing === 'cadence' ? '🔊' : '▶'}</span>
+          <div className="flex-1">
+            <div className="text-xs uppercase tracking-widest flex items-center gap-1.5"
+                 style={{ color: 'var(--text-faint)' }}>
+              Cadence
+              <span className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: sample.color }} />
+              <span style={{ color: sample.color }}>{sample.emotion}</span>
+            </div>
+            <div className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+              In your voice, with feeling
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function Demo({ onTryIt, onBack }) {
   const [activeIdx, setActiveIdx] = useState(0)
@@ -280,6 +390,31 @@ export default function Demo({ onTryIt, onBack }) {
             </button>
           </div>
         </div>
+      </section>
+
+      {/* HEAR THE DIFFERENCE — A/B audio comparison */}
+      <section className="mb-20">
+        <div className="text-xs uppercase tracking-widest mb-3"
+             style={{ color: 'var(--text-faint)' }}>
+          Hear the difference
+        </div>
+        <h2 className="text-3xl font-semibold mb-2">
+          Same words. Same voice. Different feeling.
+        </h2>
+        <p className="text-base mb-7 max-w-2xl" style={{ color: 'var(--text-soft)' }}>
+          Press both buttons. The first is how today's AAC tools speak. The second
+          is Cadence — your voice, tuned with the emotion the moment calls for.
+        </p>
+
+        <div className="space-y-3">
+          {AB_SAMPLES.map((s, i) => (
+            <ABPlayer key={i} sample={s} />
+          ))}
+        </div>
+
+        <p className="text-xs mt-4 text-center" style={{ color: 'var(--text-faint)' }}>
+          Audio generated live by ElevenLabs — your own cloned voice plays here if you've recorded one.
+        </p>
       </section>
 
       {/* THE MOAT — why this is hard to copy */}
