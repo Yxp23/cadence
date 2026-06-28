@@ -92,7 +92,7 @@ Open `http://localhost:5173`, click Connect, grant microphone access, and start 
 
 ## Links
 
-* Demo and full writeup: Devpost
+* Demo and full writeup: [Devpost](https://devpost.com/software/cadence-a-voice-that-sounds-like-you)
 
 ## Note
 
