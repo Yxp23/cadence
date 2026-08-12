@@ -79,7 +79,7 @@ const AGENT_STAGES = [
   {
     id: 'tiles',
     agent: 'Tiles agent',
-    sub: 'Claude reads the room',
+    sub: 'The LLM reads the room',
     icon: '🧩',
     line: 'Picks 12 contextual tiles: tired · happy · feeling better · not great · …',
     color: '#cfe0d2',
@@ -87,7 +87,7 @@ const AGENT_STAGES = [
   {
     id: 'suggester',
     agent: 'Suggester',
-    sub: 'Claude predicts likely replies',
+    sub: 'The LLM predicts likely replies',
     icon: '💡',
     line: 'Quick reply: "I\'m okay — a bit tired."',
     color: '#dcb8a6',
@@ -103,7 +103,7 @@ const AGENT_STAGES = [
   {
     id: 'fusion',
     agent: 'Generator',
-    sub: 'Claude fuses context + taps',
+    sub: 'The LLM fuses context + taps',
     icon: '✨',
     line: '3 candidates, each tuned to a different feeling',
     color: '#f4d35e',
@@ -452,7 +452,7 @@ export default function Demo({ onTryIt, onBack }) {
             { icon: '💗', title: 'Emotion that actually lands',
               body: '13 emotion profiles tune stability, expressiveness, and pacing per sentence. Joy sounds like joy. Frustration sounds like frustration. Tenderness lands.' },
             { icon: '🧩', title: 'AI that reads the room',
-              body: 'After every partner turn, Claude picks the 12 tiles most likely to be needed next. The right words are already in front of you. No menu-diving.' },
+              body: 'After every partner turn, the LLM picks the 12 tiles most likely to be needed next. The right words are already in front of you. No menu-diving.' },
             { icon: '🪶', title: 'Built calm — built with the community in mind',
               body: 'Pastel palette, slow animations, large targets, no harsh contrasts. Tuned per profile: autistic, ALS, aphasia, cerebral palsy. Every setting overridable.' },
           ].map((c, i) => (

@@ -4,9 +4,6 @@
 
 Built solo in ~24 hours at the **UC Berkeley AI Hackathon** (June 2026).
 
-<!-- TODO: replace with actual demo link -->
-**[▶ Demo video / GIF placeholder](#)**
-
 ---
 
 ## What it does
@@ -24,11 +21,11 @@ The backend runs a multi-agent pipeline with overlapping stages to minimize late
 ```
 Partner speaks → Deepgram streaming ASR → live transcript
                                             ↓
-                            ┌── Tiles agent (Claude) picks contextual tiles
-                            ├── Suggester (Claude) predicts quick replies
+                            ┌── Tiles agent (LLM) picks contextual tiles
+                            ├── Suggester (LLM) predicts quick replies
                             └── Memory (Redis) stores turn history
                                             ↓
-                 User taps tiles → Generator (Claude) fuses context + taps + memory
+                 User taps tiles → Generator (LLM) fuses context + taps + memory
                                             ↓
                           Emotion tagging → per-emotion voice settings
                                             ↓
@@ -36,7 +33,7 @@ Partner speaks → Deepgram streaming ASR → live transcript
 ```
 
 1. **Streaming ASR (Listener)** — Deepgram Nova-2 via raw WebSocket with interim results, endpointing, and KeepAlive pings to survive long conversational pauses.
-2. **Tiles agent** — After each partner turn, Claude reads the conversation and picks the 12 most relevant concept tiles (short words and phrases the user is likely to need).
+2. **Tiles agent** — After each partner turn, the LLM reads the conversation and picks the 12 most relevant concept tiles (short words and phrases the user is likely to need).
 3. **Suggester** — Proactively predicts 2 likely full-sentence replies with no taps needed.
 4. **Generator (Fusion Engine)** — The core of Cadence. Takes the tapped concept tiles, the heard context, and conversation history from Redis, and produces 3 natural first-person candidates, each tagged with one of 13 emotion labels.
 5. **Emotion-tuned TTS** — Each emotion label maps to hand-tuned ElevenLabs voice settings (stability, similarity boost, style, speed) so cloned voices don't warble or over-act. The audio is streamed as MP3 via a GET endpoint so `<audio src=...>` can stream natively.
@@ -58,7 +55,7 @@ Partner speaks → Deepgram streaming ASR → live transcript
 | Frontend | React 18 · Vite · Tailwind CSS · Framer Motion · Web Audio API (AudioWorklet) |
 | Backend | FastAPI · WebSockets · Python 3.11+ |
 | Speech-to-text | Deepgram (Nova-2 streaming) |
-| LLM | Claude Haiku 4.5 (Anthropic) |
+| LLM | Anthropic Haiku 4.5 |
 | Memory | Redis |
 | Text-to-speech | ElevenLabs (Instant Voice Cloning, `eleven_turbo_v2_5`) |
 

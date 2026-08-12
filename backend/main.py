@@ -3,7 +3,7 @@ Cadence backend — Step 2: Fusion Engine (Generator)
 
 Flow:
   browser mic (PCM16) → WebSocket → here → Deepgram raw WS → transcripts → back to browser
-  browser taps → here → Claude (context + taps) → 3 candidate sentences → back to browser
+  browser taps → here → the LLM (context + taps) → 3 candidate sentences → back to browser
 
 The Generator is the core of Cadence: same taps + different heard context = different candidates.
 """
@@ -57,10 +57,10 @@ DEEPGRAM_PARAMS = (
     "&utterance_end_ms=1000" # fire UtteranceEnd event after this much extra silence
 )
 
-# -- Anthropic (Claude) for the Generator ------------------------------------
+# -- Anthropic for the Generator ------------------------------------
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-# Using claude-3-5-haiku for speed (latency-critical path)
-CLAUDE_MODEL = "claude-haiku-4-5"
+# Using haiku for speed (latency-critical path)
+LLM_MODEL = "claude-haiku-4-5"
 
 # Create async client (lazy — won't fail if key is missing until actually called)
 anthropic_client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
@@ -277,7 +277,7 @@ async def elevenlabs_clone_voice(file_bytes: bytes, filename: str, voice_name: s
 
 
 # =============================================================================
-# TILES AGENT — Claude reads the room and picks contextually relevant tiles.
+# TILES AGENT — The LLM reads the room and picks contextually relevant tiles.
 # =============================================================================
 
 # Fallback when no context yet — common AAC core vocabulary
@@ -292,7 +292,7 @@ async def generate_tiles(context: str, session_id: str = "", n: int = 12) -> lis
     """
     Returns up to n concept tiles (mix of single words + short phrases) that are
     the most likely useful responses to the current heard context. Picked by
-    Claude reading the conversation, not a fixed list.
+    the LLM reading the conversation, not a fixed list.
     """
     if not anthropic_client or not context.strip():
         return FALLBACK_TILES[:n]
@@ -325,7 +325,7 @@ Return ONLY JSON: {{"tiles": ["yes", "not really", "later", ...]}}"""
 
     try:
         response = await anthropic_client.messages.create(
-            model=CLAUDE_MODEL,
+            model=LLM_MODEL,
             max_tokens=250,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -432,7 +432,7 @@ def _normalize_candidate(c) -> dict:
     """
     Ensure each candidate has {text, emotion, settings}. The Generator only picks
     the EMOTION LABEL — we look up hand-tuned settings to keep delivery natural
-    on a cloned voice (Claude's raw numbers can warble or over-act).
+    on a cloned voice (the LLM's raw numbers can warble or over-act).
     """
     if isinstance(c, str):
         return {"text": c, "emotion": "neutral", "settings": _settings_for_emotion("neutral")}
@@ -456,7 +456,7 @@ def _format_history(turns: list[dict]) -> str:
 async def generate_candidates(taps: list[str], context: str, session_id: str = "",
                               n: int = 3, variety: str = "") -> dict:
     """
-    Call Claude with the fusion prompt to generate 3 context-grounded candidates.
+    Call the LLM with the fusion prompt to generate 3 context-grounded candidates.
     Returns {"candidates": [...]} or {"error": "..."}.
     """
     if not anthropic_client:
@@ -481,16 +481,16 @@ async def generate_candidates(taps: list[str], context: str, session_id: str = "
     )
 
     try:
-        log.info(f"Generator: taps={taps}, context='{context[:80]}...' → calling Claude")
+        log.info(f"Generator: taps={taps}, context='{context[:80]}...' → calling the LLM")
 
         response = await anthropic_client.messages.create(
-            model=CLAUDE_MODEL,
+            model=LLM_MODEL,
             max_tokens=600,
             messages=[{"role": "user", "content": prompt}],
         )
 
         raw_text = response.content[0].text.strip()
-        log.info(f"Generator: Claude returned: {raw_text[:200]}")
+        log.info(f"Generator: LLM returned: {raw_text[:200]}")
 
         # Strip markdown code fences if present, then extract first JSON object
         cleaned = raw_text
@@ -508,14 +508,14 @@ async def generate_candidates(taps: list[str], context: str, session_id: str = "
         result = json.loads(cleaned)
 
         if "candidates" not in result or not isinstance(result["candidates"], list):
-            return {"error": f"Claude returned unexpected shape: {raw_text[:200]}"}
+            return {"error": f"LLM returned unexpected shape: {raw_text[:200]}"}
 
         candidates = [_normalize_candidate(c) for c in result["candidates"][:n]]
         return {"candidates": candidates}
 
     except json.JSONDecodeError:
-        log.error(f"Generator: Claude returned non-JSON: {raw_text[:300]}")
-        return {"error": "Claude returned non-JSON. Retrying may help."}
+        log.error(f"Generator: LLM returned non-JSON: {raw_text[:300]}")
+        return {"error": "LLM returned non-JSON. Retrying may help."}
     except anthropic.APIError as e:
         log.error(f"Generator: Anthropic API error: {e}")
         return {"error": f"Anthropic API error: {str(e)[:200]}"}
@@ -676,7 +676,7 @@ Return ONLY JSON:
 
     try:
         response = await anthropic_client.messages.create(
-            model=CLAUDE_MODEL,
+            model=LLM_MODEL,
             max_tokens=400,
             messages=[{"role": "user", "content": prompt}],
         )
