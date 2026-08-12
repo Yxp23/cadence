@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-const API = 'http://localhost:8000'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 // Hear the difference: same sentence, same voice, two delivery profiles.
 // "Standard AAC" = high stability + zero style + slow speed → robotic, flat.

@@ -30,7 +30,7 @@ const PROMPTS = [
 const MIN_SECONDS = 30 // ElevenLabs Instant Voice Cloning works from ~30s; we recommend ~60s
 const TARGET_SECONDS = 60
 
-const API = 'http://localhost:8000'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export default function VoiceRecorder({ sessionId, onClose, onCloned }) {
   const [stage, setStage] = useState('intro') // intro → recording → review → uploading → done

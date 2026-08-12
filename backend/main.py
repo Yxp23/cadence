@@ -33,6 +33,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(name)s  %(messa
 log = logging.getLogger("cadence")
 
 app = FastAPI(title="Cadence")
+# Wide-open CORS for local development; restrict origins before any real deployment.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -203,7 +204,7 @@ class VocabStore:
             else:
                 await self.client.rpush(self._pk(sid), word)
                 await self.client.ltrim(self._pk(sid), 0, self.PINNED_MAX - 1)
-            return await self.client.lrange(self._pk(sid), 0, -1)
+            return list(await self.client.lrange(self._pk(sid), 0, -1))  # type: ignore[arg-type]
         except Exception as e:
             log.warning(f"VocabStore.toggle_pin failed: {e}")
             return []
@@ -225,7 +226,8 @@ class VoiceStore:
     async def get(self, sid: str) -> Optional[str]:
         if not self.client or not sid: return None
         try:
-            return await self.client.get(self._key(sid))
+            val = await self.client.get(self._key(sid))
+            return str(val) if val is not None else None
         except Exception as e:
             log.warning(f"VoiceStore.get failed: {e}")
             return None

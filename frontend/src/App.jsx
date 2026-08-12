@@ -6,8 +6,8 @@ import VoiceRecorder from './VoiceRecorder.jsx'
 import Demo from './Demo.jsx'
 import Tutorial from './Tutorial.jsx'
 
-const WS_URL = 'ws://localhost:8000/ws/listen'
-const API = 'http://localhost:8000'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const WS_URL = API.replace(/^http/, 'ws') + '/ws/listen'
 
 const SIMULATE_PRESETS = [
   'Are you hungry?',

@@ -169,7 +169,7 @@ async function startOceanSound(audioRefs) {
     src.connect(hp).connect(lp).connect(master).connect(ctx.destination)
     src.start()
 
-    console.log('🌊 Ocean sound playing — if you can\'t hear it, check system volume')
+
 
     audioRefs.master = master
     audioRefs.src = src
