@@ -1,81 +1,99 @@
-# Cadence — a voice that sounds like you
+# Cadence 🌊
 
-Real-time AAC that lets people who can't speak keep up with a conversation, in their own voice.
+> **Real-time assistive communication that lets people who can't speak keep up with a live conversation — in their own voice, with real emotion.**
 
-Built solo in 24 hours at the UC Berkeley AI Hackathon 2026.
+Built solo in ~24 hours at the **UC Berkeley AI Hackathon** (June 2026).
 
-## The problem
+<!-- TODO: replace with actual demo link -->
+**[▶ Demo video / GIF placeholder](#)**
 
-Nearly 100 million people worldwide can't rely on their own voice — ALS, stroke, autism, cerebral palsy. The cruelest part of a condition like aphasia is that the person knows exactly what they want to say and just can't get it out. And the augmentative and alternative communication (AAC) tools they're given today were designed in the 1990s: robotic voices, slow menus that take minutes to navigate, zero emotion.
-
-Cadence is built to change that.
+---
 
 ## What it does
 
-Cadence listens to the conversation live. When someone taps a few concept tiles, it turns them into a full, natural sentence — spoken in a clone of the person's own voice, with the right emotion, in seconds.
+Cadence is an augmentative and alternative communication (AAC) tool designed for people who are nonverbal or losing speech — including those with ALS, autism, aphasia, and cerebral palsy. It listens to the conversation partner in real time, presents AI-picked concept tiles the user can tap, and turns those taps into natural, first-person sentences spoken aloud in the user's own cloned voice with emotionally appropriate delivery.
 
-It's not autocomplete. The wedge is that every other AAC tool predicts in a vacuum — Cadence is the first to ground every reply in what the other person just said. The same two taps after "Are you hungry?" and after "Did you like the food?" produce completely different sentences, because it heard the difference.
+Unlike traditional AAC, Cadence grounds every reply in what the other person just said: the same two taps after "Are you hungry?" and after "Did you like the food?" produce completely different sentences. The user always picks the final candidate before anything is spoken — Cadence proposes, never decides.
 
-And it always proposes, never speaks for you — the user picks the candidate before anything is said aloud. Agency stays with the person.
+---
 
 ## How it works
 
-A 4-agent real-time pipeline, plus a cloned-voice layer:
+The backend runs a multi-agent pipeline with overlapping stages to minimize latency:
 
-| Layer | Tech | Role |
-| --- | --- | --- |
-| Listener | Deepgram streaming WS | Real-time partner transcription with endpointing + KeepAlive |
-| Tiles agent | Claude Haiku | Picks the most contextually relevant tiles after each partner turn |
-| Suggester | Claude Haiku | Proactive reply predictions with no taps needed |
-| Generator | Claude Haiku | Fuses heard context + taps + memory into 3 emotion-tagged candidates |
-| Memory | Redis (per session) | Persistent conversation log; recent turns feed back into the Generator |
-| Voice | ElevenLabs (Instant Voice Cloning) | Speaks the chosen candidate in the user's cloned voice, with per-emotion settings |
+```
+Partner speaks → Deepgram streaming ASR → live transcript
+                                            ↓
+                            ┌── Tiles agent (Claude) picks contextual tiles
+                            ├── Suggester (Claude) predicts quick replies
+                            └── Memory (Redis) stores turn history
+                                            ↓
+                 User taps tiles → Generator (Claude) fuses context + taps + memory
+                                            ↓
+                          Emotion tagging → per-emotion voice settings
+                                            ↓
+                        ElevenLabs TTS → spoken in user's cloned voice
+```
 
-Four decision-making AI agents — Listener, Tiles, Suggester, Generator — coordinate over a Redis memory layer, with ElevenLabs as the voice output.
+1. **Streaming ASR (Listener)** — Deepgram Nova-2 via raw WebSocket with interim results, endpointing, and KeepAlive pings to survive long conversational pauses.
+2. **Tiles agent** — After each partner turn, Claude reads the conversation and picks the 12 most relevant concept tiles (short words and phrases the user is likely to need).
+3. **Suggester** — Proactively predicts 2 likely full-sentence replies with no taps needed.
+4. **Generator (Fusion Engine)** — The core of Cadence. Takes the tapped concept tiles, the heard context, and conversation history from Redis, and produces 3 natural first-person candidates, each tagged with one of 13 emotion labels.
+5. **Emotion-tuned TTS** — Each emotion label maps to hand-tuned ElevenLabs voice settings (stability, similarity boost, style, speed) so cloned voices don't warble or over-act. The audio is streamed as MP3 via a GET endpoint so `<audio src=...>` can stream natively.
+6. **Redis Memory** — Per-session conversation history (24-hour TTL), pinned/recent vocabulary, and cloned voice ID are stored in Redis. All features degrade gracefully when Redis is unavailable.
 
-### Key engineering details:
+### Latency work
 
-* **TTS pre-warming** — the moment the Generator returns candidates, all audio is fetched in parallel so tap-to-speech feels near-instant.
-* **AudioWorklet-level mic gating** — audio is dropped at the worklet when it isn't the partner's turn, preventing the app from transcribing its own spoken output (echo) or polluting memory with room noise.
-* **13 hand-tuned emotion profiles** — the hard part isn't cloning a voice, it's making a cloned voice feel. The Generator picks an emotion label; the backend maps it to locked, hand-tuned ElevenLabs voice settings (stability floored at 0.35 to avoid warbling).
-* **Turn-taking state machine** plus Deepgram KeepAlive so the connection survives long conversational pauses.
-* **Four accessibility profiles** — autistic, ALS, aphasia, cerebral palsy — each transforming the UI (picture+word tiles, voice banking, dwell-click), all overridable in Settings.
+- **TTS pre-warming** — the moment the Generator returns candidates, all three audio files are fetched in parallel so tap-to-speech feels near-instant.
+- **AudioWorklet-level mic gating** — audio bytes are dropped at the AudioWorklet when it's the user's turn, preventing the system from transcribing its own spoken output (echo loop) or polluting memory with room noise.
+- **Pipeline overlap** — tiles, suggestions, and memory fetch fire concurrently on each partner turn completion, not sequentially.
+- **Deepgram KeepAlive + browser heartbeat** — the backend sends periodic KeepAlive frames to Deepgram and ping frames to the browser so neither connection idles out during the user's composing phase.
 
-## Tech stack
+---
 
-* **Frontend:** React + Vite + Tailwind + framer-motion · Web Audio API
-* **Backend:** FastAPI + WebSockets (Python)
-* **Speech-to-text:** Deepgram (streaming)
-* **Reasoning:** Claude Haiku
-* **Memory:** Redis
-* **Voice:** ElevenLabs (Instant Voice Cloning, turbo_v2_5)
+## Stack
 
-## Running locally
+| Layer | Technology |
+|---|---|
+| Frontend | React 18 · Vite · Tailwind CSS · Framer Motion · Web Audio API (AudioWorklet) |
+| Backend | FastAPI · WebSockets · Python 3.11+ |
+| Speech-to-text | Deepgram (Nova-2 streaming) |
+| LLM | Claude Haiku 4.5 (Anthropic) |
+| Memory | Redis |
+| Text-to-speech | ElevenLabs (Instant Voice Cloning, `eleven_turbo_v2_5`) |
 
-You'll need API keys for Deepgram, Anthropic, ElevenLabs, and a Redis URL.
+---
+
+## Local setup
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+
+- API keys for [Deepgram](https://deepgram.com), [Anthropic](https://console.anthropic.com), and [ElevenLabs](https://elevenlabs.io)
+- (Optional) A Redis instance — the app works without it, but memory/vocab/voice-clone persistence require it
 
 ### 1. Backend
 
 ```bash
 cd backend
-python3.11 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Create `backend/.env` with your keys:
+Copy the example env file and add your keys:
 
-```
-DEEPGRAM_API_KEY=your_key
-ANTHROPIC_API_KEY=your_key
-ELEVENLABS_API_KEY=your_key
-REDIS_URL=your_redis_url
+```bash
+cp .env.example .env
+# Edit .env with your API keys
 ```
 
-Then run:
+Run the server:
 
 ```bash
 python main.py
+# → FastAPI on http://localhost:8000
 ```
 
 ### 2. Frontend
@@ -84,18 +102,49 @@ python main.py
 cd frontend
 npm install
 npm run dev
+# → Vite dev server on http://localhost:5173
 ```
 
-Open `http://localhost:5173`, click Connect, grant microphone access, and start a conversation.
+### 3. Use it
 
-> **No mic handy?** Use the Simulate panel to feed a partner phrase as text and test the full pipeline without audio.
+Open [http://localhost:5173](http://localhost:5173), click **Connect**, grant microphone access, and start talking.
 
-## Links
+> **No mic handy?** Expand the "Practice" panel at the bottom to type a partner phrase and test the full pipeline without audio.
 
-* Demo and full writeup: [Devpost](https://devpost.com/software/cadence-a-voice-that-sounds-like-you)
+---
+
+## Project structure
+
+```
+cadence/
+├── backend/
+│   ├── main.py              # FastAPI app — all agents, WebSocket, TTS, memory
+│   ├── requirements.txt
+│   ├── .env.example
+│   └── .env                  # your local keys (git-ignored)
+├── frontend/
+│   ├── public/
+│   │   └── audio-processor.js   # AudioWorklet — PCM16 mic capture + gating
+│   ├── src/
+│   │   ├── App.jsx           # Main app — turn state machine, tiles, candidates, TTS
+│   │   ├── Landing.jsx       # Welcome page + profile picker (ocean wave animation)
+│   │   ├── Demo.jsx          # "How it works" pitch page with A/B audio comparison
+│   │   ├── Tutorial.jsx      # Step-by-step guided walkthrough
+│   │   ├── VoiceRecorder.jsx # Voice-banking flow (record → clone via ElevenLabs)
+│   │   ├── symbols.js        # Emoji symbol map for PECS-style tile rendering
+│   │   ├── index.css          # Design tokens + animations
+│   │   └── main.jsx          # React entry point
+│   └── package.json
+├── .gitignore
+└── README.md
+```
+
+---
 
 ## Note
 
 This is a working prototype built at a hackathon — not a medical device. For any clinical use, consult a speech-language pathologist. Voices are cloned with consent and stored privately per session.
 
-Built with Deepgram, Claude, ElevenLabs, and Redis.
+---
+
+*Built solo by Yash Patil at the UC Berkeley AI Hackathon, June 2026.*

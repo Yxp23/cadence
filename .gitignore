@@ -7,10 +7,26 @@ backend/venv/
 *.egg-info/
 .pytest_cache/
 
+# Environment files (anywhere in tree)
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
 # Frontend
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+
+# Audio / cache artifacts
+*.wav
+*.mp3
+*.webm
+*.opus
 
 # OS
 .DS_Store
